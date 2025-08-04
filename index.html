@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>DJ Requests with Approval</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        display: flex;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #1e1e2f, #111);
+        color: #00bfff; /* sky blue text */
+        transition: all 0.3s ease;
+      }
+      .sidebar {
+        width: 300px;
+        background: #172a45;
+        padding: 20px;
+        overflow-y: auto;
+        border-right: 2px solid #004a99;
+        transition: all 0.3s ease;
+      }
+      .main {
+        flex: 1;
+        padding: 20px;
+        transition: all 0.3s ease;
+      }
+      h1,
+      h2,
+      h3 {
+        text-align: center;
+        color: #00bfff;
+      }
+      .section {
+        background: #0d1e33;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+      }
+      input[type="text"],
+      input[type="url"],
+      input[type="password"] {
+        width: 100%;
+        padding: 10px;
+        margin: 8px 0;
+        font-size: 16px;
+        border-radius: 4px;
+        border: none;
+        background: #001f4d;
+        color: #00bfff;
+      }
+      button {
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        border-radius: 4px;
+        border: none;
+        background: #00bfff;
+        color: #001f4d;
+        margin: 10px 5px 0 0;
+        transition: background 0.3s;
+      }
+      button:hover {
+        background: #008fcc;
+        color: #fff;
+      }
+      ul {
+        list-style-type: none;
+        padding-left: 0;
+      }
+      li {
+        background: #003366;
+        margin-bottom: 12px;
+        padding: 10px;
+        border-radius: 8px;
+      }
+      .request-info {
+        margin-bottom: 10px;
+      }
+      .request-link {
+        color: #66c2ff;
+        text-decoration: none;
+        word-break: break-word;
+      }
+      .status-msg {
+        margin-top: 10px;
+        font-weight: bold;
+      }
+      .thumb {
+        max-width: 100%;
+        border-radius: 6px;
+        margin-top: 8px;
+      }
+      #adminLoginSection,
+      #dashboardSection {
+        display: none;
+      }
+      #qrcode {
+        text-align: center;
+        margin-top: 20px;
+        background: white;
+        padding: 10px;
+        border-radius: 10px;
+        display: block; /* initially shown */
+      }
+      #toggleQrBtn,
+      #toggleMobileBtn {
+        background: #00bfff;
+        color: #001f4d;
+        margin: 10px auto 0 auto;
+        display: block;
+        border-radius: 20px;
+        padding: 8px 16px;
+        font-weight: bold;
+        width: fit-content;
+        cursor: pointer;
+      }
+
+      /* Mobile view styles */
+      body.mobile-view {
+        flex-direction: column;
+      }
+      body.mobile-view .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 2px solid #004a99;
+        max-height: 250px;
+        overflow-y: scroll;
+      }
+      body.mobile-view .main {
+        padding: 10px 15px;
+      }
+      body.mobile-view .section {
+        padding: 15px;
+        margin-bottom: 15px;
+      }
+      body.mobile-view input[type="text"],
+      body.mobile-view input[type="url"],
+      body.mobile-view input[type="password"] {
+        font-size: 14px;
+        padding: 8px;
+      }
+      body.mobile-view button {
+        font-size: 14px;
+        padding: 8px 15px;
+        margin: 8px 5px 0 0;
+      }
+      body.mobile-view #qrcode {
+        width: 150px;
+        margin: 10px auto;
+      }
+
+      /* Remove button for approved songs */
+      button.remove-btn {
+        background: #ff4444;
+        color: white;
+        font-size: 12px;
+        padding: 5px 10px;
+        margin-left: 10px;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        vertical-align: middle;
+      }
+
+      button.remove-btn:hover {
+        background: #cc0000;
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <h3>Approved Songs</h3>
+      <ul id="approvedRequestsList"></ul>
+
+      <h3>Denied Songs</h3>
+      <ul id="deniedRequestsList"></ul>
+
+      <h3>Check In Section</h3>
+      <input
+        type="text"
+        id="checkInNameInput"
+        placeholder="Enter name to check in"
+      />
+      <button onclick="submitCheckIn()">Check In</button>
+      <ul id="checkedInList"></ul>
+    </div>
+
+    <div class="main">
+      <h1>DJ Song Requests</h1>
+
+      <div class="section" id="requesterSection">
+        <h2>Request a Song</h2>
+        <input type="text" id="nameInput" placeholder="Your Name" />
+        <input type="text" id="songInput" placeholder="Song Title" />
+        <input
+          type="url"
+          id="linkInput"
+          placeholder="Optional: Song Link (YouTube, Spotify...)"
+        />
+        <button onclick="submitRequest()">Send Request</button>
+        <p id="requestStatus" class="status-msg"></p>
+        <button onclick="showAdminLogin()">Admin Login</button>
+
+        <div id="qrcode"></div>
+        <button id="toggleQrBtn" onclick="toggleQrCode()">Hide QR Code</button>
+        <button id="toggleMobileBtn" onclick="toggleMobileView()">
+          Toggle Mobile View
+        </button>
+      </div>
+
+      <div class="section" id="adminLoginSection">
+        <h2>Admin Login</h2>
+        <input type="text" id="adminUser" placeholder="Username" />
+        <input type="password" id="adminPassword" placeholder="Password" />
+        <button onclick="authenticateAdmin()">Login</button>
+        <p id="adminStatus" class="status-msg"></p>
+      </div>
+
+      <div class="section" id="dashboardSection">
+        <h2>Admin Panel</h2>
+        <h3>Pending Requests</h3>
+        <ul id="pendingRequestsList"></ul>
+      </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyBDC1k-aAGxU12MDM0WRFTm1L-aHJLENtE",
+        authDomain: "music-requests-33cd0.firebaseapp.com",
+        databaseURL: "https://music-requests-33cd0-default-rtdb.firebaseio.com",
+        projectId: "music-requests-33cd0",
+        storageBucket: "music-requests-33cd0.appspot.com",
+        messagingSenderId: "72020655741",
+        appId: "1:72020655741:web:07b406187d7c469abebb14",
+        measurementId: "G-XZ1JCVNL7X",
+      };
+
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.database();
+
+      let isAdmin = false;
+      let latestPendingSnapshot = null;
+
+      function showAdminLogin() {
+        document.getElementById("adminLoginSection").style.display = "block";
+      }
+
+      function authenticateAdmin() {
+        const user = document.getElementById("adminUser").value;
+        const pass = document.getElementById("adminPassword").value;
+        if (user === "Alfie" && pass === "djpass") {
+          isAdmin = true;
+          document.getElementById("adminStatus").style.color = "lightgreen";
+          document.getElementById("adminStatus").textContent =
+            "Admin mode enabled";
+          document.getElementById("dashboardSection").style.display = "block";
+          renderPendingRequests(latestPendingSnapshot);
+        } else {
+          document.getElementById("adminStatus").style.color = "red";
+          document.getElementById("adminStatus").textContent =
+            "Invalid login credentials";
+        }
+      }
+
+      function submitRequest() {
+        const name = document.getElementById("nameInput").value.trim();
+        const song = document.getElementById("songInput").value.trim();
+        const link = document.getElementById("linkInput").value.trim();
+        const status = document.getElementById("requestStatus");
+
+        if (!name || !song) {
+          status.style.color = "red";
+          status.textContent = "Please enter your name and song title.";
+          return;
+        }
+
+        const newRef = db.ref("requests").push();
+        newRef
+          .set({ name, song, link: link || null, timestamp: Date.now() })
+          .then(() => {
+            status.style.color = "lightgreen";
+            status.textContent = "Request submitted!";
+            document.getElementById("nameInput").value = "";
+            document.getElementById("songInput").value = "";
+            document.getElementById("linkInput").value = "";
+          })
+          .catch((err) => {
+            status.style.color = "red";
+            status.textContent = "Submission failed.";
+            console.error(err);
+          });
+      }
+
+      function renderPendingRequests(snapshot) {
+        latestPendingSnapshot = snapshot;
+        const list = document.getElementById("pendingRequestsList");
+        list.innerHTML = "";
+        if (!snapshot || !snapshot.exists()) {
+          list.innerHTML = "<li>No pending requests.</li>";
+          return;
+        }
+        snapshot.forEach((child) => {
+          const key = child.key;
+          const data = child.val();
+          const li = document.createElement("li");
+          const info = document.createElement("div");
+          info.className = "request-info";
+          let thumbHTML = "";
+          if (data.link && data.link.includes("youtube.com/watch?v=")) {
+            const videoId = new URL(data.link).searchParams.get("v");
+            if (videoId)
+              thumbHTML = `<img src="https://img.youtube.com/vi/${videoId}/0.jpg" class="thumb">`;
+          }
+          info.innerHTML = `<strong>${data.song}</strong><br><em>${data.name}</em><br><a class="request-link" href="${data.link}" target="_blank">${data.link}</a>${thumbHTML}`;
+          li.appendChild(info);
+          if (isAdmin) {
+            const approve = document.createElement("button");
+            approve.textContent = "Approve";
+            approve.onclick = () => approveRequest(key, data);
+
+            const deny = document.createElement("button");
+            deny.textContent = "Deny";
+            deny.onclick = () => denyRequest(key, data);
+
+            li.appendChild(approve);
+            li.appendChild(deny);
+          }
+          list.appendChild(li);
+        });
+      }
+
+      function renderApprovedRequests(snapshot) {
+        const list = document.getElementById("approvedRequestsList");
+        list.innerHTML = "";
+        if (!snapshot.exists()) {
+          list.innerHTML = "<li>No approved requests yet.</li>";
+          return;
+        }
+        snapshot.forEach((child) => {
+          const key = child.key;
+          const data = child.val();
+          const li = document.createElement("li");
+          const time = new Date(data.timestamp).toLocaleTimeString();
+          li.innerHTML = `<strong>${data.song}</strong><br><em>${data.name}</em> <small>(${time})</small>`;
+
+          // Add Remove button
+          const remove = document.createElement("button");
+          remove.textContent = "Remove";
+          remove.className = "remove-btn";
+          remove.onclick = () => {
+            db.ref("approvedRequests/" + key)
+              .remove()
+              .catch(console.error);
+          };
+          li.appendChild(remove);
+
+          list.appendChild(li);
+        });
+      }
+
+      function renderDeniedRequests(snapshot) {
+        const list = document.getElementById("deniedRequestsList");
+        list.innerHTML = "";
+        if (!snapshot.exists()) {
+          list.innerHTML = "<li>No denied requests.</li>";
+          return;
+        }
+        snapshot.forEach((child) => {
+          const data = child.val();
+          const li = document.createElement("li");
+          const time = new Date(data.timestamp).toLocaleTimeString();
+          li.innerHTML = `<strong>${data.song}</strong><br><em>${data.name}</em> <small>(${time})</small>`;
+          list.appendChild(li);
+        });
+      }
+
+      // New Check-in submission function
+      function submitCheckIn() {
+        const nameInput = document.getElementById("checkInNameInput");
+        const name = nameInput.value.trim();
+        if (!name) return alert("Please enter a name to check in.");
+        const newRef = db.ref("checkIns").push();
+        newRef
+          .set({ name, timestamp: Date.now() })
+          .then(() => {
+            nameInput.value = "";
+          })
+          .catch(console.error);
+      }
+
+      // Render check-ins with Remove button
+      function renderCheckIns(snapshot) {
+        const list = document.getElementById("checkedInList");
+        list.innerHTML = "";
+        if (!snapshot.exists()) {
+          list.innerHTML = "<li>No one has checked in yet.</li>";
+          return;
+        }
+        snapshot.forEach((child) => {
+          const key = child.key;
+          const data = child.val();
+          const time = new Date(data.timestamp).toLocaleTimeString();
+          const li = document.createElement("li");
+          li.textContent = `${data.name} (checked in at ${time})`;
+
+          const removeBtn = document.createElement("button");
+          removeBtn.textContent = "Remove";
+          removeBtn.className = "remove-btn";
+          removeBtn.style.marginLeft = "10px";
+          removeBtn.onclick = () => {
+            db.ref("checkIns/" + key)
+              .remove()
+              .catch(console.error);
+          };
+          li.appendChild(removeBtn);
+
+          list.appendChild(li);
+        });
+      }
+
+      // Approve a request: move from requests to approvedRequests and remove from requests
+      function approveRequest(key, data) {
+        db.ref("approvedRequests")
+          .push()
+          .set(data)
+          .then(() => db.ref("requests/" + key).remove())
+          .catch(console.error);
+      }
+
+      // Deny a request: move from requests to deniedRequests and remove from requests
+      function denyRequest(key, data) {
+        db.ref("deniedRequests")
+          .push()
+          .set(data)
+          .then(() => db.ref("requests/" + key).remove())
+          .catch(console.error);
+      }
+
+      // Listeners to update UI in realtime
+      db.ref("requests").on("value", (snapshot) => {
+        renderPendingRequests(snapshot);
+      });
+      db.ref("approvedRequests").on("value", (snapshot) => {
+        renderApprovedRequests(snapshot);
+      });
+      db.ref("deniedRequests").on("value", (snapshot) => {
+        renderDeniedRequests(snapshot);
+      });
+      db.ref("checkIns").on("value", (snapshot) => {
+        renderCheckIns(snapshot);
+      });
+
+      // QR Code generation for mobile request page
+      const qrcodeContainer = document.getElementById("qrcode");
+      const currentUrl = window.location.href;
+      const qrcode = new QRCode(qrcodeContainer, {
+        text: currentUrl,
+        width: 180,
+        height: 180,
+        colorDark: "#000",
+        colorLight: "#fff",
+        correctLevel: QRCode.CorrectLevel.H,
+      });
+
+      function toggleQrCode() {
+        if (qrcodeContainer.style.display === "none") {
+          qrcodeContainer.style.display = "block";
+          document.getElementById("toggleQrBtn").textContent = "Hide QR Code";
+        } else {
+          qrcodeContainer.style.display = "none";
+          document.getElementById("toggleQrBtn").textContent = "Show QR Code";
+        }
+      }
+
+      // Mobile view toggle
+      function toggleMobileView() {
+        document.body.classList.toggle("mobile-view");
+      }
+    </script>
+  </body>
+</html>
